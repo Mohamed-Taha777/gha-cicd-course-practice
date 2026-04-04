@@ -6,11 +6,11 @@ on:
   # Run automatically when app code, tests, or this workflow file changes.
   schedule:
     - cron: '25 10 * * *'
-  push:
-    paths:
-      - "app/**"
-      - "tests/**"
-      - ".github/workflows/02-ci.yml"
+  #push:
+   # paths:
+    #  - "app/**"
+     # - "tests/**"
+      #- ".github/workflows/02-ci.yml"
   # Allow a safe manual run before students trigger it with a code change.
   workflow_dispatch:
 
