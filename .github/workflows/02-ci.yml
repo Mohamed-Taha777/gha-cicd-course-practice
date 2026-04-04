@@ -16,21 +16,23 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v6
 
-      - name: Read Python versions from secret
+      - name: Set Python versions from secret
         run: |
-          echo "VERSIONS=${{ secrets.PYTHON_VERSIONS }}" >> $GITHUB_ENV
+          echo "VERSIONS=${{ secrets.secret }}" >> $GITHUB_ENV
 
       - name: Run tests for each version
         run: |
           for version in $(echo $VERSIONS | tr ',' ' '); do
-            echo "Running tests on Python $version"
-            
-            # تثبيت بايثون
-            pyenv install -s $version
-            pyenv global $version
-            
-            python --version
-            
-            # تشغيل التست
-            python -m unittest discover -s tests -v
+            echo "=============================="
+            echo "Running on Python $version"
+            echo "=============================="
+
+            # Setup Python
+            sudo apt-get update
+            sudo apt-get install -y python$version
+
+            python$version --version
+
+            # Run tests
+            python$version -m unittest discover -s tests -v
           done
