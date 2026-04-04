@@ -13,25 +13,42 @@ on:
   workflow_dispatch:
 
 jobs:
+  # الجوب الأولى: تجهيز مصفوفة النسخ من السيكريتات
+  prepare-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix-versions: ${{ steps.set-matrix.outputs.versions }}
+    steps:
+      - id: set-matrix
+        run: |
+          # قراءة السيكريتات ووضعها في مصفوفة JSON
+          VERSION1="${{ secrets.secret1 }}"
+          VERSION2="${{ secrets.secret2 }}"
+          JSON_ARRAY="[\"$VERSION1\", \"$VERSION2\"]"
+          echo "versions=$JSON_ARRAY" >> $GITHUB_OUTPUT
+
+  # الجوب الثانية: تشغيل الاختبارات بناءً على المصفوفة الناتجة
   run-tests:
-    # The runner is the temporary machine that executes the steps below.
+    needs: prepare-matrix
+    # الـ Runner هو الجهاز المؤقت الذي ينفذ الخطوات أدناه.
     runs-on: ubuntu-latest
     
     strategy:
       matrix:
-        python-version: ["3.11","3.12"]
+        # استدعاء المخرج (Output) من الجوب السابقة وتحويله لمصفوفة
+        python-version: ${{ fromJson(needs.prepare-matrix.outputs.matrix-versions) }}
         
     steps:
       - name: Check out repository
-        # Download the repository contents onto the runner.
+        # تنزيل محتويات المستودع على الـ Runner.
         uses: actions/checkout@v6
 
-      - name: Set up Python
-        # Prepare Python on the runner. This does not change the student laptop.
+      - name: Set up Python ${{ matrix.python-version }}
+        # إعداد بيئة بايثون بالنسخة المحددة من الماتريكس.
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Run tests
-        # This is the key verification step in the CI workflow.
+        # خطوة التحقق الأساسية في الـ CI.
         run: python -m unittest discover -s tests -v
