@@ -1,54 +1,56 @@
-# This is the first real CI workflow in the course.
-# It verifies a change by running tests on a fresh runner.
 name: 02 CI Workflow
 
 on:
-  # Run automatically when app code, tests, or this workflow file changes.
   push:
     paths:
       - "app/**"
       - "tests/**"
       - ".github/workflows/02-ci.yml"
-  # Allow a safe manual run before students trigger it with a code change.
   workflow_dispatch:
 
 jobs:
-  # الجوب الأولى: تجهيز مصفوفة النسخ من السيكريتات
   prepare-matrix:
     runs-on: ubuntu-latest
+    # تعريف الـ outputs على مستوى الجوب مهم جداً لنقلها للجوب التالية
     outputs:
       matrix-versions: ${{ steps.set-matrix.outputs.versions }}
     steps:
       - id: set-matrix
         run: |
-          # قراءة السيكريتات ووضعها في مصفوفة JSON
-          VERSION1="${{ secrets.secret1 }}"
-          VERSION2="${{ secrets.secret2 }}"
-          JSON_ARRAY="[\"$VERSION1\", \"$VERSION2\"]"
+          # استدعاء السيكريتات وتخزينها في متغيرات Bash
+          V1="${{ secrets.secret1 }}"
+          V2="${{ secrets.secret2 }}"
+          
+          # إذا كانت السيكريتات فارغة، سنضع قيم افتراضية لمنع الخطأ
+          if [ -z "$V1" ] || [ -z "$V2" ]; then
+            echo "Warning: Secrets are empty, using defaults."
+            JSON_ARRAY="[\"3.11\", \"3.12\"]"
+          else
+            JSON_ARRAY="[\"$V1\", \"$V2\"]"
+          fi
+          
+          echo "Generated JSON: $JSON_ARRAY"
+          # إرسال المصفوفة للمخرجات
           echo "versions=$JSON_ARRAY" >> $GITHUB_OUTPUT
 
-  # الجوب الثانية: تشغيل الاختبارات بناءً على المصفوفة الناتجة
   run-tests:
+    # التأكد من كتابة اسم الجوب السابقة بدقة هنا
     needs: prepare-matrix
-    # الـ Runner هو الجهاز المؤقت الذي ينفذ الخطوات أدناه.
     runs-on: ubuntu-latest
     
     strategy:
       matrix:
-        # استدعاء المخرج (Output) من الجوب السابقة وتحويله لمصفوفة
+        # استدعاء المخرج باستخدام المسار الكامل: needs.<job_id>.outputs.<output_name>
         python-version: ${{ fromJson(needs.prepare-matrix.outputs.matrix-versions) }}
         
     steps:
       - name: Check out repository
-        # تنزيل محتويات المستودع على الـ Runner.
         uses: actions/checkout@v6
 
       - name: Set up Python ${{ matrix.python-version }}
-        # إعداد بيئة بايثون بالنسخة المحددة من الماتريكس.
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Run tests
-        # خطوة التحقق الأساسية في الـ CI.
         run: python -m unittest discover -s tests -v
