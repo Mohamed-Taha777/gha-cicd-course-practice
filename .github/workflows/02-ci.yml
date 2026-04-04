@@ -11,36 +11,25 @@ on:
 jobs:
   prepare-matrix:
     runs-on: ubuntu-latest
-    # تعريف الـ outputs على مستوى الجوب مهم جداً لنقلها للجوب التالية
     outputs:
       matrix-versions: ${{ steps.set-matrix.outputs.versions }}
     steps:
       - id: set-matrix
         run: |
-          # استدعاء السيكريتات وتخزينها في متغيرات Bash
-          V1="${{ secrets.SECRET1 }}"
-          V2="${{ secrets.SECRET2 }}"
+          # نفترض أن السيكريت جواه "3.11, 3.12"
+          RAW_DATA="${{ secrets.secret1 }}"
           
-          # إذا كانت السيكريتات فارغة، سنضع قيم افتراضية لمنع الخطأ
-          if [ -z "$V1" ] || [ -z "$V2" ]; then
-            echo "Warning: Secrets are empty, using defaults."
-            JSON_ARRAY="[\"3.11\", \"3.12\"]"
-          else
-            JSON_ARRAY="[\"$V1\", \"$V2\"]"
-          fi
+          # تحويل النص إلى مصفوفة JSON: ["3.11", "3.12"]
+          # بنشيل المسافات ونقسم بناءً على الفاصلة
+          JSON_ARRAY=$(echo $RAW_DATA | jq -R 'split(",") | map(gsub(" "; ""))' -c)
           
-          echo "Generated JSON: $JSON_ARRAY"
-          # إرسال المصفوفة للمخرجات
           echo "versions=$JSON_ARRAY" >> $GITHUB_OUTPUT
 
   run-tests:
-    # التأكد من كتابة اسم الجوب السابقة بدقة هنا
     needs: prepare-matrix
     runs-on: ubuntu-latest
-    
     strategy:
       matrix:
-        # استدعاء المخرج باستخدام المسار الكامل: needs.<job_id>.outputs.<output_name>
         python-version: ${{ fromJson(needs.prepare-matrix.outputs.matrix-versions) }}
         
     steps:
