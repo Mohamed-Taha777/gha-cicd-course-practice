@@ -18,8 +18,8 @@ jobs:
       - id: set-matrix
         run: |
           # استدعاء السيكريتات وتخزينها في متغيرات Bash
-          V1="${{ secrets.secret1 }}"
-          V2="${{ secrets.secret2 }}"
+          V1="${{ secrets.SECRET1 }}"
+          V2="${{ secrets.SECRET2 }}"
           
           # إذا كانت السيكريتات فارغة، سنضع قيم افتراضية لمنع الخطأ
           if [ -z "$V1" ] || [ -z "$V2" ]; then
