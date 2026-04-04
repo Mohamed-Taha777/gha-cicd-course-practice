@@ -17,7 +17,7 @@ jobs:
       - id: set-matrix
         run: |
           # نفترض أن السيكريت جواه "3.11, 3.12"
-          RAW_DATA="${{ secrets.secret1 }}"
+          RAW_DATA="${{ secrets.secret }}"
           
           # تحويل النص إلى مصفوفة JSON: ["3.11", "3.12"]
           # بنشيل المسافات ونقسم بناءً على الفاصلة
