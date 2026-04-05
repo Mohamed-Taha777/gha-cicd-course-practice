@@ -3,6 +3,7 @@
 # It is visible in the Actions tab, but it is not part of the core beginner labs.
 # Do not run it unless the required Azure and registry secrets are configured.
 name: 91 OPTIONAL Example - Azure ACR and AKS (Do Not Run Unless Instructed)
+
 on:
   pull_request: 
     branches:
