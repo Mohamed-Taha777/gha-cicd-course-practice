@@ -1,5 +1,4 @@
 name: 03 Build Artifact Workflow
-
 on:
   workflow_dispatch:
 
