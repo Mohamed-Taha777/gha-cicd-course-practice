@@ -1,65 +1,57 @@
-# This workflow packages the verified app.
-# It is manual on purpose so Day 1 stays focused on CI.
 name: 03 Build Artifact Workflow
 
 on:
-  # Students start this workflow manually from the Actions tab.
   workflow_dispatch:
 
 env:
-  # Keep common image values in one place so the build steps stay readable.
   IMAGE_NAME: tiny-health-app
   IMAGE_TAR: tiny-health-app.tar
   ARTIFACT_NAME: tiny-health-app-image
 
 jobs:
-  build-package:
-    # Use a fresh GitHub-hosted runner for the build.
+  test:
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
 
     steps:
       - name: Check out repository
-        # Get the repository files onto the runner.
         uses: actions/checkout@v6
 
       - name: Set up Python
-        # Prepare Python so the workflow can run the tests first.
         uses: actions/setup-python@v6
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
 
       - name: Run tests
-        # Build only after the verification step passes.
         run: python -m unittest discover -s tests -v
 
-     # - name: Set image tag
-        # Create one simple tag so the image is easy to identify in this run.
-     #   id: image-tag
-     #   run: |
-      #    IMAGE_TAG="run-${GITHUB_RUN_NUMBER}"
-       #   echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+  build-package:
+    runs-on: ubuntu-latest
+    needs: test  # مش هيشتغل غير لما كل الـ matrix ينجح
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      
-      - name: Build Docker image with docker build
-        # Create the packaged application image with one traceable tag.
-        # The deploy workflow will run this exact same tag later.
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          # إنشاء الـ Tag باستخدام رقم الـ Run
-          tags: ${{ env.IMAGE_NAME }}:run-${{ github.run_number }}
-          # تحميل الصورة في الـ local daemon لنتمكن من عمل docker save لاحقاً
-          load: true
-          push: false
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set image tag
+        id: image-tag
+        run: |
+          IMAGE_TAG="run-${GITHUB_RUN_NUMBER}"
+          echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t "${IMAGE_NAME}:${{ steps.image-tag.outputs.image_tag }}" \
+            .
 
       - name: Save Docker image as artifact file
-        # Convert that exact tagged image into a file that can be reused later.
-        run: docker save "${{ env.IMAGE_NAME }}:run-${{ github.run_number }}" -o "${{ env.IMAGE_TAR }}"
-      
+        run: docker save "${IMAGE_NAME}:${{ steps.image-tag.outputs.image_tag }}" -o "${IMAGE_TAR}"
+
       - name: Upload build artifact
-        # Store the packaged output so a later workflow can use the exact same package.
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
