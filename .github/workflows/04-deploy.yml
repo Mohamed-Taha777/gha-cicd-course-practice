@@ -1,67 +1,54 @@
-# This workflow completes the story by delivering the saved package.
-# It starts after the build workflow finishes successfully.
 name: 04 Deploy Workflow
 
 on:
   workflow_run:
-    # Listen for the build workflow by name.
     workflows: ["03 Build Artifact Workflow"]
-    # Start when the build workflow has completed.
     types: [completed]
-
-permissions:
-  # Read access is enough because this workflow only downloads artifacts and reads repo data.
-  actions: read
-  contents: read
 
 jobs:
   deploy-package:
-    # Continue only when the build workflow succeeded.
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    # Use a fresh runner for the deployment simulation.
     runs-on: ubuntu-latest
 
+    env:
+      BASE_IMAGE: python:3.12-slim
+      APP_PORT: 8000
+      IMAGE_NAME: tiny-health-app
+      CONTAINER_NAME: tiny-health-container
+
     steps:
-      - name: Download build artifact
-        # Download the exact artifact produced by the build run.
-        uses: actions/download-artifact@v8
-        with:
-          name: tiny-health-app-image
-          github-token: ${{ github.token }}
-          repository: ${{ github.repository }}
-          run-id: ${{ github.event.workflow_run.id }}
-          path: downloaded-artifact
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-      - name: Show downloaded files
-        # Quick visibility step so students can see what arrived from the build.
-        run: ls -R downloaded-artifact
+      - name: Build Docker image with args
+        run: |
+          docker build \
+            --build-arg BASE_IMAGE=${BASE_IMAGE} \
+            --build-arg APP_PORT=${APP_PORT} \
+            --build-arg IMAGE_NAME=${IMAGE_NAME} \
+            --build-arg CONTAINER_NAME=${CONTAINER_NAME} \
+            -t ${IMAGE_NAME}:latest \
+            .
 
-      - name: Load Docker image
-        # Turn the saved artifact file back into a Docker image.
-        run: docker load --input downloaded-artifact/tiny-health-app.tar
-
-      - name: Start container
-        # Start the exact same tagged image that the build workflow created.
+      - name: Run container
         run: |
           docker run -d \
-            --name tiny-health-container \
-            -p 8000:8000 \
-            "tiny-health-app:run-${{ github.event.workflow_run.run_number }}"
+            --name ${CONTAINER_NAME} \
+            -p ${APP_PORT}:${APP_PORT} \
+            ${IMAGE_NAME}:latest
 
-      - name: Smoke test deployed app
-        # Retry a few times because app startup can take a moment.
+      - name: Smoke test
         run: |
           for attempt in 1 2 3 4 5; do
-            if curl --fail --silent http://127.0.0.1:8000/health; then
+            if curl --fail --silent http://127.0.0.1:${APP_PORT}/health; then
               exit 0
             fi
-            echo "Waiting for app to become ready..."
+            echo "Waiting for app..."
             sleep 2
           done
-          echo "App did not become ready in time."
+          echo "App not ready"
           exit 1
 
-      - name: Stop container
+      - name: Cleanup
         if: always()
-        # Clean up even if an earlier step fails.
-        run: docker rm -f tiny-health-container || true
+        run: docker rm -f ${CONTAINER_NAME} || true
