@@ -1,6 +1,7 @@
 name: 04 Deploy Workflow
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows: ["03 Build Artifact Workflow"]
     types: [completed]
