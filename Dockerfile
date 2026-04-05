@@ -18,6 +18,13 @@ ENV APP_PORT=${APP_PORT}
 ENV IMAGE_NAME=${IMAGE_NAME}
 ENV CONTAINER_NAME=${CONTAINER_NAME}
 
+# COPY source code inside image
+WORKDIR /app
+COPY . /app
+
+# Install dependencies if any
+# RUN pip install -r requirements.txt
+
 EXPOSE ${APP_PORT}
 
 CMD ["python", "app.py"]
