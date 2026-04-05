@@ -20,7 +20,7 @@ ENV CONTAINER_NAME=${CONTAINER_NAME}
 
 # COPY source code inside image
 WORKDIR /app
-COPY . /app
+COPY . .
 
 # Install dependencies if any
 # RUN pip install -r requirements.txt
