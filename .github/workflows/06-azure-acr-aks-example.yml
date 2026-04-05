@@ -8,6 +8,8 @@ on:
   pull_request: 
     branches:
       -  main
+    types: opened
+
   # Keep this example visible without triggering it automatically during class.
   workflow_dispatch:
 
