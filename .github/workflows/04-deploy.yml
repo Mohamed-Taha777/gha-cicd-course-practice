@@ -25,7 +25,7 @@ jobs:
       - name: Build Docker image (dynamic base)
         run: |
           docker build \
-            -f Dockerfile.prod \
+            -f Dockerfile \
             --build-arg BASE_IMAGE=${BASE_IMAGE} \
             --build-arg APP_ENV=production \
             --build-arg APP_PORT=${APP_PORT} \
