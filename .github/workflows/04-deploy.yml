@@ -37,6 +37,8 @@ jobs:
             --name ${CONTAINER_NAME} \
             -p ${APP_PORT}:${APP_PORT} \
             ${IMAGE_NAME}:latest
+      - name: Show container logs
+        run: docker logs ${CONTAINER_NAME}
 
       - name: Smoke test
         run: |
